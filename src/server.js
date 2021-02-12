@@ -1,10 +1,8 @@
-require('./db/mongoDB')
-const app = require('./app')
-require('dotenv').config();
+require("./db/mongoDB");
+const app = require("./app");
+require("dotenv").config();
 
 const PORT = process.env.PORT;
-
-
 
 app.listen(PORT, function () {
   console.log("Server is running on Port: " + PORT);
