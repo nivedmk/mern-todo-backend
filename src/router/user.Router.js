@@ -83,7 +83,7 @@ userRouter.post("/logoutAll", auth, async (req, res) => {
   }
 });
 
-userRouter.patch("/update/:id", async (req, res) => {
+userRouter.patch("/update/me", auth, async (req, res) => {
   const updates = Object.keys(req.body);
   const allowedUpdates = ["name", , "email", "password", "age"];
   const isValidOperation = updates.every((update) =>
@@ -95,27 +95,18 @@ userRouter.patch("/update/:id", async (req, res) => {
   }
 
   try {
-    const user = await User.findById({ _id: req.params.id });
-
-    if (!user) return res.status(400).send({ error: "User not found" });
-
-    updates.forEach((update) => (user[update] = req.body[update]));
-    await user.save();
-    res.send(user);
+    updates.forEach((update) => (req.user[update] = req.body[update]));
+    await req.user.save();
+    res.send(req.user);
   } catch (e) {
     res.status(400).send(e);
   }
 });
 
-userRouter.delete("/delete/:id", async (req, res) => {
-  const _id = req.params.id;
+userRouter.delete("/delete/me", auth, async (req, res) => {
   try {
-    const user = await User.deleteOne({ _id: _id });
-    if (user.deletedCount != 0) {
-      return res.status(202).send({ success: "Item deleted successfully" });
-    } else {
-      return res.status(400).send({ err: "Error on deleting" });
-    }
+    await req.user.remove();
+    res.send(req.user);
   } catch (e) {
     res.status(500).send(e);
   }

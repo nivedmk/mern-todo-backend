@@ -1,22 +1,36 @@
 const express = require("express");
 const ToDo = require("../models/todo.model");
+const auth = require("../middleware/auth");
 
 const toDorouter = express.Router();
 
-toDorouter.get("/", async (req, res) => {
-  await ToDo.find(function (err, todos) {
-    if (err) {
-      console.log(err);
-    } else {
-      res.json(todos);
-    }
-  });
+toDorouter.get("/", auth, async (req, res) => {
+  // await ToDo.find(function (err, todos) {
+  //   if (err) {
+  //     console.log(err);
+  //   } else {
+  //     res.json(todos);
+  //   }
+  // });
+  try {
+    const toDos = await ToDo.find({ owner: req.user._id });
+    // await req.user.populate("todos").execPopulate();
+    console.log(req.user._id);
+
+    // if (!toDos) {
+    //   return res.status(404).send({ message: "Invalid operation" });
+    // }
+    res.status(200).send(toDos);
+  } catch (e) {
+    res.status(500).send(e);
+  }
 });
 
-toDorouter.get("/:id", async (req, res) => {
+toDorouter.get("/:id", auth, async (req, res) => {
   const _id = req.params.id;
   try {
-    const toDo = await ToDo.findById({ _id });
+    // const toDo = await ToDo.findById({ _id });
+    const toDo = await ToDo.findOne({ _id, owner: req.user._id });
     if (!toDo) {
       return res.status(404).send();
     }
@@ -27,9 +41,10 @@ toDorouter.get("/:id", async (req, res) => {
   }
 });
 
-toDorouter.post("/add", async (req, res) => {
+toDorouter.post("/add", auth, async (req, res) => {
   const toDo = new ToDo({
     ...req.body,
+    owner: req.user._id,
   });
 
   try {
@@ -40,7 +55,7 @@ toDorouter.post("/add", async (req, res) => {
   }
 });
 
-toDorouter.patch("/update/:id", async (req, res) => {
+toDorouter.patch("/update/:id", auth, async (req, res) => {
   const updates = Object.keys(req.body);
   const allowedUpdates = [
     "todo_description",
@@ -59,7 +74,10 @@ toDorouter.patch("/update/:id", async (req, res) => {
   try {
     // const todo = await ToDo.findByIdAndUpdate(req.params.id, req.body,{new: true, runValidators: true})
     // the above will update directly from mongodb. we need it from mongoose. mostly for user route pre --save--
-    const toDo = await ToDo.findOne({ _id: req.params.id });
+    const toDo = await ToDo.findOne({
+      _id: req.params.id,
+      owner: req.user._id,
+    });
 
     if (!toDo) {
       return res.status(400).send();
@@ -73,15 +91,16 @@ toDorouter.patch("/update/:id", async (req, res) => {
   }
 });
 
-toDorouter.delete("/delete/:id", async (req, res) => {
-  const _id = req.params.id;
+toDorouter.delete("/delete/:id", auth, async (req, res) => {
   try {
-    const todo = await ToDo.deleteOne({ _id: _id });
-    if (todo.deletedCount != 0) {
-      return res.status(202).send({ success: "Item deleted successfully" });
-    } else {
+    const todo = await ToDo.findOneAndDelete({
+      _id: req.params.id,
+      owner: req.user._id,
+    });
+    if (!todo) {
       return res.status(400).send({ err: "Error on deleting" });
     }
+    res.status(202).send(todo);
   } catch (e) {
     res.status(500).send(e);
   }

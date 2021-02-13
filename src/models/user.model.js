@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const ToDo = require("./todo.model");
 const Schema = mongoose.Schema;
 
 const userSchema = new Schema({
@@ -52,7 +53,24 @@ const userSchema = new Schema({
   ],
 });
 
+userSchema.virtual("todos", {
+  ref: "ToDo",
+  localField: "_id",
+  foreignField: "owner",
+});
+
 //instance methords
+
+userSchema.methods.toJSON = function () {
+  const user = this;
+  const userObject = user.toObject();
+
+  delete userObject.tokens;
+  delete userObject.password;
+
+  return userObject;
+};
+
 userSchema.methods.generateAuthToken = async function () {
   const user = this;
   const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_KEY); //, {expiresIn:'1 days'}
@@ -87,6 +105,13 @@ userSchema.pre("save", async function (next) {
   if (user.isModified("password")) {
     user.password = await bcrypt.hash(user.password, 8);
   }
+
+  next();
+});
+
+userSchema.pre("remove", async function (req, res, next) {
+  const user = this;
+  await ToDo.deleteMany({ owner: user._id });
 
   next();
 });
