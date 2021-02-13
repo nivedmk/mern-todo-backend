@@ -42,7 +42,7 @@ const userSchema = new Schema({
       }
     },
   },
-  token: [
+  tokens: [
     {
       token: {
         type: String,
@@ -55,9 +55,9 @@ const userSchema = new Schema({
 //instance methords
 userSchema.methods.generateAuthToken = async function () {
   const user = this;
-  const token = jwt.sign({ _id: user._id.toString() }, "mynewapp"); //, {expiresIn:'1 days'}
+  const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_KEY); //, {expiresIn:'1 days'}
 
-  user.token = user.token.concat({ token });
+  user.tokens = user.tokens.concat({ token });
   await user.save();
 
   return token;
