@@ -1,15 +1,18 @@
 const express = require("express");
+const auth = require("../middleware/auth");
 const User = require("../models/user.model");
 
 const userRouter = express.Router();
 
-userRouter.get("/", async (req, res) => {
-  try {
-    const user = await User.find({});
-    res.send(user);
-  } catch (e) {
-    res.status(500).send(e);
-  }
+userRouter.get("/me", auth, async (req, res) => {
+  res.send(req.user);
+
+  // try {
+  //   const user = await User.find({});
+  //   res.send(user);
+  // } catch (e) {
+  //   res.status(500).send(e);
+  // }
 });
 
 userRouter.get("/:id", async (req, res) => {
@@ -36,7 +39,7 @@ userRouter.post("/add", async (req, res) => {
     const token = await user.generateAuthToken();
     res.status(201).send({ user, token });
   } catch (e) {
-    console.log(error);
+    // console.log(error);
     res.status(400).send(e);
   }
 });
@@ -47,10 +50,36 @@ userRouter.post("/login", async (req, res) => {
       req.body.email,
       req.body.password
     ); // statics model methods
+
+    if (!user) {
+      return res.status(400).send({ error: "UnMatched credentials" });
+    }
     const token = await user.generateAuthToken(); //methords or instance methode
     res.send({ user, token });
   } catch (e) {
     res.status(400).send(e);
+  }
+});
+
+userRouter.post("/logout", auth, async (req, res) => {
+  try {
+    req.user.tokens = req.user.tokens.filter((token) => {
+      return token.token !== req.token;
+    });
+    await req.user.save();
+    res.send({ message: "Logout successfull" });
+  } catch (e) {
+    res.status(500).send({ message: "Something went wrong" });
+  }
+});
+
+userRouter.post("/logoutAll", auth, async (req, res) => {
+  try {
+    req.user.tokens = [];
+    await req.user.save();
+    res.status(200).send({ Message: "Logout from all device" });
+  } catch (e) {
+    res.status(500).send({ message: "something went wrong" });
   }
 });
 
