@@ -13,3 +13,8 @@ npm run dev
 # environment variables
 
 .env file is added on root folder containing MONGO_URI and PORT of the application
+
+# contact me?
+
+github: https://github.com/nivedmk
+linkedIn: https://www.linkedin.com/in/nivedmk
