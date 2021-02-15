@@ -37,10 +37,10 @@ userRouter.post("/add", async (req, res) => {
   try {
     await user.save();
     const token = await user.generateAuthToken();
-    res.status(201).send({ user, token });
+    res.status(201).send({ user, token, message1: "Successfully added" });
   } catch (e) {
     // console.log(error);
-    res.status(400).send(e);
+    res.status(400).send({ e, message1: "error" });
   }
 });
 
